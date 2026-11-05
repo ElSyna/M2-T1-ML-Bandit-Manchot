@@ -3,6 +3,8 @@ import random
 
 
 class GreedyPlayer:
+    """Stratégie epsilon-greedy standard."""
+
     def __init__(self, n, eps):
         self.n = n
         self.eps = eps
@@ -24,18 +26,24 @@ class GreedyPlayer:
         return random.randrange(self.n)
 
     def reward(self, action, value):
+        if not 0 <= action < self.n:
+            raise ValueError("action out of range")
         self.eval_count[action] += 1
         q = self.action_values[action]
         self.action_values[action] = q + (value - q) / self.eval_count[action]
 
 
 class OptimistGreedyPlayer(GreedyPlayer):
+    """Version optimistic de epsilon-greedy : initialisation des Q à q0."""
+
     def __init__(self, n, eps=0, q0=5):
         super().__init__(n, eps)
         self.action_values = [float(q0)] * n
 
 
 class UCBGreedyPlayer(GreedyPlayer):
+    """UCB1 : forte exploration au début, puis exploitation selon bonus d'incertitude."""
+
     def __init__(self, n, c=2, eps=0):
         super().__init__(n, eps)
         self.c = c
@@ -46,7 +54,6 @@ class UCBGreedyPlayer(GreedyPlayer):
         super().reward(action, value)
 
     def _greedy_action(self):
-        # une action jamais jouée est considérée comme maximale
         untried = [a for a in range(self.n) if self.eval_count[a] == 0]
         if untried:
             return random.choice(untried)
