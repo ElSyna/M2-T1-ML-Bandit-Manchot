@@ -107,11 +107,40 @@ def simulate_moving_bandit_experiment(horizon=1000, runs=2000):
         for t in range(horizon):
             for env, player in zip(envs, players):
                 action = player.get_action()
+                optimal_action = env.best_action
                 reward = env.play(action)
                 player.reward(action, reward)
                 rewards[t] += reward
-                optimal[t] += (action == env.best_action)
+                optimal[t] += (action == optimal_action)
         results[eps] = (rewards / runs, optimal / runs)
+    return results
+
+
+def simulate_moving_bandit_strategies(horizon=1000, runs=2000):
+    strategies = {
+        "Epsilon-greedy (ε=0.1)": lambda: GreedyPlayer(10, 0.1),
+        "Optimistic greedy (Q₀=5)": lambda: OptimistGreedyPlayer(10, 0, q0=5),
+        "UCB (c=2)": lambda: UCBGreedyPlayer(10, c=2),
+    }
+    results = {}
+
+    for name, make_player in strategies.items():
+        envs = [MovingBan10() for _ in range(runs)]
+        players = [make_player() for _ in range(runs)]
+        rewards = np.zeros(horizon)
+        optimal = np.zeros(horizon)
+
+        for t in range(horizon):
+            for env, player in zip(envs, players):
+                action = player.get_action()
+                optimal_action = env.best_action
+                reward = env.play(action)
+                player.reward(action, reward)
+                rewards[t] += reward
+                optimal[t] += action == optimal_action
+
+        results[name] = (rewards / runs, 100 * optimal / runs)
+
     return results
 
 
@@ -189,10 +218,29 @@ def plot_ex7_moving_bandit_curves():
     axes[0].legend()
     axes[1].set_title("Exercice 7.4 : Proportion de choix optimaux")
     axes[1].set_xlabel("Étape")
-    axes[1].set_ylabel("Pourcentage")
+    axes[1].set_ylabel("Pourcentage de choix optimaux")
     axes[1].legend()
     fig.tight_layout()
-    fig.savefig(OUTPUT_DIR / "ex7_moving_bandit.png", dpi=200)
+    fig.savefig(OUTPUT_DIR / "ex7_3_epsilon_moving_bandit.png", dpi=200)
+    plt.close(fig)
+
+
+def plot_ex7_optimistic_ucb():
+    results = simulate_moving_bandit_strategies()
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+    for name, (rewards, optimal) in results.items():
+        axes[0].plot(rewards, label=name)
+        axes[1].plot(optimal, label=name)
+    axes[0].set_title("Exercice 7.4 : Récompense moyenne")
+    axes[0].set_xlabel("Étape")
+    axes[0].set_ylabel("Récompense")
+    axes[0].legend()
+    axes[1].set_title("Exercice 7.4 : Proportion de choix optimaux")
+    axes[1].set_xlabel("Étape")
+    axes[1].set_ylabel("Pourcentage de choix optimaux")
+    axes[1].legend()
+    fig.tight_layout()
+    fig.savefig(OUTPUT_DIR / "ex7_4_optimiste_ucb.png", dpi=200)
     plt.close(fig)
 
 
@@ -205,6 +253,7 @@ def main():
     plot_ex4_epsilon_curves()
     plot_ex5_optimist_vs_greedy()
     plot_ex7_moving_bandit_curves()
+    plot_ex7_optimistic_ucb()
     print(f"Figures generated in {OUTPUT_DIR}")
 
 
